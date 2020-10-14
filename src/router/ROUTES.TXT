@@ -1,0 +1,26 @@
+User: if (isTech) bugpool       -> GET list of all the reports unsolved and not cancelled. Can be filtered by query params.  DONE!
+    : if (isTech) history       -> GET List of all the reports accepted by the user logged regardless of the state.          DONE!
+    : if (isTech) pending       -> GET List of all the reports accepted and Pending to solve.                                DONE!
+    : if (isTech) accept        -> PUT Accept a report made by any user changing the state.                                  DONE!
+    :               login       -> POST Login as user, tech or supervisor.                                                   DONE!
+    : if (!isTech) history      -> GET List of the reports made by the user regardless of the state.                         DONE!
+    : if (!isTech) pending      -> GET List of the reports made by the user pending to solve.                                DONE!
+    : if (!isTech) createreport -> POST create a new report.                                                                 DONE!
+
+Supervisor  : users           -> GET List of all the users not technicians in the company.               DONE!
+            : tech            -> GET List of all the technicians in the company.                         DONE!
+            : createuser      -> POST Create a new user to the company that the Supervisor belongs to.   DONE!
+            : user/:id        -> GET Give the resume of the user/tech: firstname, lastname, position, email, gender, birth, age,
+             reports made, percentage solve, percentage unsolved and percentage cancelled.               *
+            : user/:id        -> PUT edit the current data of the selected user.                         DONE!
+            : user/:id        -> DELETE erase an user from the company to make some space.               DONE!
+
+Superuser   : companies         -> POST create a new company.                             DONE!
+            : createsupervisor  -> POST create a new supervisor.                          DONE!
+            : login             -> POST login as a superuser.                             DONE!
+            : companies         -> GET List of all the companies.                         DONE!
+            : companies/:id     -> PUT edit the information of the company selected.      DONE!
+            : companies/:id     -> DELETE a company.                                      DONE!
+            : companies/:id     -> GET Data of the company data such as company name, email, RNC, telephone,
+                 active?, expire date, usersPaid, total of users.                         DONE!
+            
