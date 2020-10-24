@@ -4,14 +4,14 @@ import adaptRequest from "../helpers/adapt-request";
 import { makeHttpResponse } from '../helpers/http-respond-gen'
 import reportValidator from '../validators/report-validator'
 import repo from '.'
-import jwt from "jsonwebtoken";
+import validateToken from "../middlewares/token";
 require("dotenv").config();
  
 
 const route = express.Router();
 route.use(cors())
 
-route.get('/pending', (req, res) => {
+route.get('/pending', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     pendingReports(httpRequest)
@@ -27,7 +27,7 @@ route.get('/pending', (req, res) => {
         })
 })
 
-route.get('/history', (req, res) => {
+route.get('/history', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     reportsHistory(httpRequest)
@@ -43,7 +43,7 @@ route.get('/history', (req, res) => {
         })
 })
 
-route.post('/create-report', (req, res) => {
+route.post('/create-report', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     createReport(httpRequest)
@@ -60,7 +60,7 @@ route.post('/create-report', (req, res) => {
 })
 
 
-route.put('/:id', (req, res) => {
+route.put('/:id', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     editReport(httpRequest)
@@ -79,10 +79,18 @@ route.put('/:id', (req, res) => {
 
 
 async function reportsHistory(httpRequest) {
-    const {_id} = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+    //Cheking if the user is a tech or supervisor
+    const { isTech, isSupervisor } = httpRequest.tokenDecoded
+
+    if (isTech || isSupervisor) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     const filter = {
-        user_id: _id
+        user_id: httpRequest.tokenDecoded._id
     }
 
     const sortedBy = {}
@@ -102,7 +110,15 @@ async function reportsHistory(httpRequest) {
 
 
 async function editReport(httpRequest) {
-    jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+    //Cheking if the user is a tech or supervisor
+    const { isTech, isSupervisor } = httpRequest.tokenDecoded
+
+    if (isTech || isSupervisor) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     try {
         const validEdit = reportValidator(httpRequest.body)
@@ -126,12 +142,20 @@ async function editReport(httpRequest) {
 
 
 async function createReport(httpRequest) {
-    const { _id } = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+    //Cheking if the user is a tech or supervisor
+    const { isTech, isSupervisor } = httpRequest.tokenDecoded
+
+    if (isTech || isSupervisor) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     try {
         const validReport = reportValidator(httpRequest.body)
 
-        validReport.user_id = _id
+        validReport.user_id = httpRequest.tokenDecoded._id
 
         const newReport = await repo.reportRepo.add(validReport)
 
@@ -150,15 +174,41 @@ async function createReport(httpRequest) {
 
 
 async function pendingReports(httpRequest) {
-    const { _id } = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+    //Cheking if the user is a tech or supervisor
+    const { isTech, isSupervisor } = httpRequest.tokenDecoded
+    const { app, date } = httpRequest.queryParams
 
-    const filter = { user_id: _id, isCancelled: false, isSolvedUser: false }
+    if (isTech || isSupervisor) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
-    const pendingReports = await repo.reportRepo.findAll(filter)
+    const filter = { user_id: httpRequest.tokenDecoded._id, 
+        isCancelled: false, isSolvedUser: false }
+
+    const sorted = {}
+
+    if (app) filter.app = app
+    if (date) sorted.date = date
+
+    const results = await repo.reportRepo.findAll(httpRequest.queryParams, filter, sorted)
+    const reports = []
+
+    for (const report of results.reports) {
+        reports.push({
+          _id:      report._id,
+          app:      report.app,
+          date:     report.date,
+        });
+    }
+
+    results.reports = reports
 
     return makeHttpResponse.success({
         statusCode: 200,
-        data: pendingReports
+        data: results
     })
 }
 

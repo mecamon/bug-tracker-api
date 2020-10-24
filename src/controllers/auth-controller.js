@@ -6,15 +6,33 @@ import repo from '../controllers'
 import superuserValidator from '../validators/superuser-validator'
 import userValidator from '../validators/user-validator'
 import { UsersLimitExeceded } from '../helpers/errors'
-import jwt from "jsonwebtoken";
+import  validateToken from '../middlewares/token';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt'
 require("dotenv").config();
- 
+
 
 const route = express.Router();
 route.use(cors())
 
-route.post('*', (req, res) => {
+
+route.post('/login', (req, res) => {
+    const httpRequest = adaptRequest(req)
+
+    logUser(httpRequest)
+        .then( ({ headers, statusCode, data }) => {
+            res
+                .set(headers)
+                .status(statusCode)
+                .send(data)
+        }).catch(e => {
+            res
+                .status(500)
+                .json(e.message)
+        })
+})
+
+route.post('*', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     responseFactory(httpRequest)
@@ -33,8 +51,6 @@ route.post('*', (req, res) => {
 
 async function responseFactory(httpRequest) {
     switch (httpRequest.path) {
-        case "/login"
-            : return logUser(httpRequest)
 
         case "/register-superuser"
             : return registerSuperuser(httpRequest)
@@ -70,16 +86,16 @@ async function logUser(httpRequest) {
         })
     }
 
-    const { _id, firstname, lastname, idCompany } = user
+    const { _id, firstname, lastname, idCompany, isTech,  isSupervisor } = user
 
-    const token = jwt.sign({ _id, firstname, lastname, idCompany }, 
+    const token = jwt.sign({ _id, firstname, lastname, idCompany, isTech,  isSupervisor}, 
         process.env.TOKEN_KEY, {
-        expiresIn: process.env.TOKEN_TIME,
+        expiresIn: process.env.TOKEN_TIME, 
     })
  
     return makeHttpResponse.success({
         statusCode: 202,
-        data: { _id, firstname, lastname, token }
+        data: { _id, firstname, lastname, token, isTech, isSupervisor }
     })
 }
 
@@ -103,8 +119,6 @@ async function registerSuperuser(httpRequest) {
 
 async function registerSupervisor(httpRequest) {
     httpRequest.body['isSupervisor'] = true
-
-    jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
 
     try {
         const { usersPaid, usersRegistered } = await repo
@@ -138,7 +152,7 @@ async function registerSupervisor(httpRequest) {
 
 async function registerUser(httpRequest) {
 
-    const decoded = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+    const decoded = httpRequest.tokenDecoded
 
     try {
         httpRequest.body['idCompany'] = decoded.idCompany

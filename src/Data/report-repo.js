@@ -18,10 +18,22 @@ export default function reportRepo(reportModel) {
         })
     }
 
-    async function findAll(filter = {}, sorted = {}) {
-        return await reportModel
-            .find(filter)
+    async function findAll(queryParams, filter = {}, sorted = {}) {
+
+        const { page = 1, limit = 17 } = queryParams
+
+        const reports = await reportModel.find(filter)
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
             .sort(sorted)
+
+        const count = await reportModel.countDocuments(filter)
+
+        return { 
+            totalOfPages: Math.ceil(count / limit),
+            currentPage: page,
+            reports
+        }
     }
 
     async function remove(id) {

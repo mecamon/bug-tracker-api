@@ -16,11 +16,11 @@ export default function companyValidator(
 		...otherInfo
 
 	}) {
-		fieldValidator.nameWithNumbers(2, "name", name)
+		fieldValidator.nameWithNumbers(2, "Name", name)
 		fieldValidator.number(9, "RNC", rnc)
 		fieldValidator.number(12, "Telephone", telephone)
 		fieldValidator.email(email)
-		fieldValidator.number(3, "usersPaid", usersPaid)
+		fieldValidator.number(3, "Users paid", usersPaid)
 		return {
 			name, 
 			rnc: parseInt(rnc), 

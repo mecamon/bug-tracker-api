@@ -5,6 +5,7 @@ export default function adaptRequest(req) {
     pathParams: req.params,
     queryParams: req.query,
     body: req.body,
+    tokenDecoded: req.tokenDecoded,
     authorization: req.get("Authorization"),
   });
 }

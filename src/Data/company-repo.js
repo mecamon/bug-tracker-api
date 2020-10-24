@@ -20,8 +20,22 @@ export default function companyRepo(companyModel) {
         })
     }
 
-    async function findAll() {
-        return await companyModel.find()
+    async function findAll(queryParams, filter = {}, sorted = {}) {
+
+        const { page = 1, limit = 17 } = queryParams
+
+        const companies = await companyModel.find(filter)
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .sort(sorted)
+
+        const count = await companyModel.countDocuments(filter)
+
+        return { 
+            totalOfPages: Math.ceil(count / limit),
+            currentPage: page,
+            companies
+        }
     }
 
     async function remove(id) {

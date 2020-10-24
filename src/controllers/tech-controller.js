@@ -3,14 +3,14 @@ import cors from "cors";
 import adaptRequest from "../helpers/adapt-request";
 import { makeHttpResponse } from '../helpers/http-respond-gen'
 import repo from '.'
-import jwt from "jsonwebtoken";
+import validateToken from "../middlewares/token";
 require("dotenv").config();
  
 
 const route = express.Router();
 route.use(cors())
 
-route.get('/pending', (req, res) => {
+route.get('/pending', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     pendingReports(httpRequest)
@@ -26,7 +26,7 @@ route.get('/pending', (req, res) => {
         })
 })
 
-route.get('/history', (req, res) => {
+route.get('/history', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     reportsHistory(httpRequest)
@@ -42,7 +42,7 @@ route.get('/history', (req, res) => {
         })
 })
 
-route.get('/bugpool', (req, res) => {
+route.get('/bugpool', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     bugpool(httpRequest)
@@ -59,7 +59,7 @@ route.get('/bugpool', (req, res) => {
 })
 
 
-route.put('/:id', (req, res) => {
+route.put('/:id', validateToken, (req, res) => {
     const httpRequest = adaptRequest(req)
 
     acceptReport(httpRequest)
@@ -78,6 +78,16 @@ route.put('/:id', (req, res) => {
 
 
 async function bugpool(httpRequest) {
+
+    //Cheking if the user is a tech
+    const { isTech } = httpRequest.tokenDecoded
+
+    if (!isTech) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     const filter = {tech_id: undefined}
 
@@ -98,10 +108,19 @@ async function bugpool(httpRequest) {
 
 
 async function reportsHistory(httpRequest) {
-    const {_id} = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+
+    //Cheking if the user is a tech
+    const { isTech } = httpRequest.tokenDecoded
+
+    if (!isTech) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     const filter = {
-        tech_id: _id
+        tech_id: httpRequest.tokenDecoded._id
     }
 
     const sortedBy = {}
@@ -121,10 +140,22 @@ async function reportsHistory(httpRequest) {
 
 
 async function acceptReport(httpRequest) {
-    const { _id } = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+
+    //Cheking if the user is a tech
+    const { isTech } = httpRequest.tokenDecoded
+
+    if (!isTech) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     try {
-        const acceptFilter = { isSelect: true, tech_id: _id }
+        const acceptFilter = {
+            isSelect: true, 
+            tech_id: httpRequest.tokenDecoded._id 
+        }
 
         const acceptedReport = await repo
             .reportRepo.modify(httpRequest.pathParams.id, acceptFilter)
@@ -146,9 +177,22 @@ async function acceptReport(httpRequest) {
 
 
 async function pendingReports(httpRequest) {
-    const { _id } = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
 
-    const filter = { tech_id: _id, isCancelled: false, isSolvedUser: false }
+    //Cheking if the user is a tech
+    const { isTech } = httpRequest.tokenDecoded
+
+    if (!isTech) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
+
+    const filter = {
+        tech_id: httpRequest.tokenDecoded._id, 
+        isCancelled: false, 
+        isSolvedUser: false 
+    }
 
     const pendingReports = await repo.reportRepo.findAll(filter)
 

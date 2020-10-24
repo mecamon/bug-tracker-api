@@ -5,7 +5,7 @@ export class makeHttpResponse {
         "Content-Type": "application/json",
       },
       statusCode: statusCode,
-      data: JSON.stringify(data),
+      data: data,
     };
   }
 
@@ -13,11 +13,12 @@ export class makeHttpResponse {
     return {
       headers: {
         "Content-Type": "application/json",
+        "Application-Error": "Error"
       },
       statusCode: statusCode,
       data: {
         success: false,
-        errorMessage: JSON.stringify(errorMessage),
+        errorMessage: errorMessage,
       },
     };
   }

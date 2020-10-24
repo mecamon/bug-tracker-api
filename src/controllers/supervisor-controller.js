@@ -5,14 +5,14 @@ import fieldValidator from '../validators/field-validators'
 import adaptRequest from "../helpers/adapt-request";
 import { makeHttpResponse } from '../helpers/http-respond-gen'
 import repo from '.'
-import jwt from "jsonwebtoken";
+import validateToken from '../middlewares/token';
 require("dotenv").config();
  
 
 const route = express.Router();
 route.use(cors())
 
-route.get('/', (req, res) => {
+route.get('/', validateToken,  (req, res) => {
     const httpRequest = adaptRequest(req)
 
     getUsers(httpRequest)
@@ -29,7 +29,7 @@ route.get('/', (req, res) => {
 })
 
 
-route.all('/:id', (req, res) => {
+route.all('/:id', validateToken,  (req, res) => {
     const httpRequest = adaptRequest(req)
 
     responseIdFactory(httpRequest)
@@ -46,10 +46,19 @@ route.all('/:id', (req, res) => {
 })
 
 async function getUsers(httpRequest) {
-    const decoded  = jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+
+    //Cheking if the user is a supervisor
+    const { isSupervisor } = httpRequest.tokenDecoded
+
+    if (!isSupervisor) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
     
     const filter = {
-        idCompany: decoded.idCompany, 
+        idCompany: httpRequest.tokenDecoded.idCompany, 
         isSupervisor: false, 
     } || {}
 
@@ -67,7 +76,16 @@ async function getUsers(httpRequest) {
 
 
 async function responseIdFactory(httpRequest) {
-    jwt.verify(httpRequest.authorization, process.env.TOKEN_KEY)
+
+    //Cheking if the user is a supervisor
+    const { isSupervisor } = httpRequest.tokenDecoded
+
+    if (!isSupervisor) {
+        return makeHttpResponse.error({
+          statusCode: 403,
+          errorMessage: 'Unauthorized access',
+        });
+    }
 
     switch (httpRequest.method) {
         case "GET"

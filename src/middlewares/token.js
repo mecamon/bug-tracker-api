@@ -3,31 +3,20 @@ require("dotenv").config();
 import { makeHttpResponse } from '../helpers/http-respond-gen'
 
 
-function generate(payload) {
-  const token = jwt.sign(payload, process.env.TOKEN_KEY, {
-    expiresIn: process.env.TOKEN_TIME,
-  })
-  return token;
-}
+function validateToken (req, res, next) {
+  let token = req.get('Authorization')
 
-function verifyToken(authorization) {
-  jwt.verify(authorization, process.env.TOKEN_KEY, (err, decoded) => {
+  jwt.verify(token, process.env.TOKEN_KEY, (err, decoded) => {
     if (err) {
       return makeHttpResponse.error({
         statusCode: 403,
         errorMessage: err.message
       })
     }
+    req.tokenDecoded = decoded
+    next()
   })
-    
 }
 
-function decodeToken(authorization) {
-  return jwt.decode(authorization, )
-}
+export default validateToken
 
-export default ({
-  generate,
-  verifyToken,
-  decodeToken
-});

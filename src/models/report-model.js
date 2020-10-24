@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 export default function makeReportModel() {
   return mongoose.model(
     "Report",
-    Schema({
+    new Schema({
       app: {
         type: String,
         required: false,

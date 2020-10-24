@@ -25,8 +25,22 @@ export default function userRepo(userModel) {
         })
     }
 
-    async function findAll(filter = {}) {
-        return await userModel.find(filter)
+    async function findAll(queryParams, filter = {}, sorted = {}) {
+
+        const { page = 1, limit = 17 } = queryParams
+
+        const reports = await userModel.find(filter)
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .sort(sorted)
+
+        const count = await userModel.countDocuments(filter)
+
+        return { 
+            totalOfPages: Math.ceil(count / limit),
+            currentPage: page,
+            reports
+        }
     }
 
     async function remove(id) {
