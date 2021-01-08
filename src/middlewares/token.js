@@ -4,18 +4,22 @@ import { makeHttpResponse } from '../helpers/http-respond-gen'
 
 
 function validateToken (req, res, next) {
-  let token = req.get('Authorization')
+  let token = req.get('authorization')
 
-  jwt.verify(token, process.env.TOKEN_KEY, (err, decoded) => {
-    if (err) {
-      return makeHttpResponse.error({
-        statusCode: 403,
-        errorMessage: err.message
-      })
-    }
+  try {
+    const decoded = jwt.verify(token, process.env.TOKEN_KEY)
+
     req.tokenDecoded = decoded
+
     next()
-  })
+
+  }catch (e) {
+    const { headers, statusCode, data } = makeHttpResponse.error({
+      statusCode: 403,
+      errorMessage: e.message
+    })
+    res.set(headers).status(statusCode).send(data);
+  }
 }
 
 export default validateToken

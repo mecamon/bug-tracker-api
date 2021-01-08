@@ -1,4 +1,4 @@
-export default function userRepo(userModel) {
+export default function makeUserRepo(userModel) {
     return Object.freeze({
         add,
         exist,

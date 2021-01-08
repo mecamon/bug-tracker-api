@@ -1,4 +1,4 @@
-export default function superuserRepo(superuserModel) {
+export default function makeSuperuserRepo(superuserModel) {
     return Object.freeze({
         add,
         exist,
